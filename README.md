@@ -1,4 +1,4 @@
-index.github.io
+
 Creative Coding with Scratch 3.0 Fun, interactive programming classes for kids and beginners
 
 About Classes Benefits Contact About My Classes Welcome to my Scratch 3.0 programming classes! I offer fun, interactive online sessions where students learn to create games, animations, and stories using Scratch’s visual programming language.
