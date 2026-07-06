@@ -1,30 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEON DASH · 15 levels · Flying Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        body {
+            background: #0b0b1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            touch-action: none;
+        }
+        .game-wrapper {
+            position: relative;
+            border: 2px solid #6f3aff;
+            box-shadow: 0 0 40px #6f3aff88;
+            border-radius: 12px;
+            background: #0e0e28;
+            max-width: 100vw;
+            max-height: 100vh;
+        }
+        canvas {
+            display: block;
+            width: 1000px;
+            height: 600px;
+            background: #0e0e28;
+            touch-action: none;
+        }
+        #ui {
+            position: absolute;
+            top: 16px;
+            left: 20px;
+            color: #b7aaff;
+            font-weight: bold;
+            font-size: 22px;
+            text-shadow: 0 0 12px #6f3aff;
+            letter-spacing: 2px;
+            pointer-events: none;
+            display: flex;
+            gap: 28px;
+            z-index: 10;
+        }
+        #levelDisplay { color: #ff7bf0; text-shadow: 0 0 16px #ff2d95; }
+        #themeDisplay { color: #a88bff; }
+        #progressDisplay { color: #7f7fb0; font-size: 16px; }
+        #coinDisplay { color: #ffd700; font-size: 16px; }
+        .hint {
+            position: absolute;
+            bottom: 18px;
+            right: 24px;
+            color: #5f5f9f;
+            font-size: 14px;
+            opacity: 0.5;
+            letter-spacing: 1px;
+            pointer-events: none;
+            z-index: 10;
+        }
 
-Creative Coding with Scratch 3.0 Fun, interactive programming classes for kids and beginners
+        /* MOBILE CONTROLS */
+        #mobileControls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: none;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 15;
+            pointer-events: none;
+        }
+        #mobileControls button {
+            pointer-events: auto;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid #6f3aff;
+            background: rgba(15, 15, 40, 0.8);
+            color: #b7aaff;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 0 20px #6f3aff44;
+            touch-action: none;
+            cursor: pointer;
+        }
+        #mobileControls button:active { background: rgba(106, 58, 255, 0.3); transform: scale(0.92); }
+        .dpad { display: flex; gap: 12px; pointer-events: none; }
+        .dpad button { pointer-events: auto; }
+        .action-buttons { display: flex; gap: 12px; pointer-events: none; }
+        .action-buttons button {
+            pointer-events: auto;
+            background: rgba(255, 45, 149, 0.2);
+            border-color: #ff2d95;
+            color: #ff7bf0;
+            width: 70px;
+            height: 70px;
+            font-size: 14px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
 
-About Classes Benefits Contact About My Classes Welcome to my Scratch 3.0 programming classes! I offer fun, interactive online sessions where students learn to create games, animations, and stories using Scratch’s visual programming language.
+        @media (max-width: 1020px) {
+            canvas { width: 100%; height: auto; aspect-ratio: 1000/600; }
+            #ui { font-size: 16px; top: 10px; left: 12px; gap: 14px; }
+            .hint { display: none; }
+            #mobileControls { display: flex !important; }
+        }
+        @media (pointer: coarse) { #mobileControls { display: flex !important; } }
 
-My teaching approach focuses on project-based learning, where students build real projects while learning programming concepts. Classes are suitable for complete beginners ages 8-14.
+        /* START SCREEN */
+        #modeScreen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(11, 11, 26, 0.96);
+            z-index: 20;
+            border-radius: 12px;
+            backdrop-filter: blur(6px);
+            padding: 16px;
+            overflow-y: auto;
+        }
+        #modeScreen h1 {
+            font-size: 38px;
+            color: #7df9ff;
+            text-shadow: 0 0 40px #4a4aff, 0 0 80px #4a4aff;
+            margin-bottom: 4px;
+            letter-spacing: 4px;
+        }
+        #modeScreen .sub { color: #a88bff; font-size: 13px; margin-bottom: 14px; opacity: 0.7; }
+        .mode-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            width: 92%;
+            max-width: 780px;
+            margin-bottom: 14px;
+        }
+        .mode-btn {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid #3a2a6a;
+            border-radius: 10px;
+            padding: 8px 4px;
+            color: #b7aaff;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.25s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .mode-btn:hover, .mode-btn.active {
+            background: rgba(106, 58, 255, 0.2);
+            border-color: #6f3aff;
+            transform: scale(1.04);
+            box-shadow: 0 0 20px #6f3aff44;
+        }
+        .mode-btn.active { border-color: #ff2d95; background: rgba(255, 45, 149, 0.15); }
+        .mode-btn .icon { font-size: 20px; display: block; margin-bottom: 1px; }
 
-Class Offerings Beginner Scratch (Level 1) Duration: 8 weeks (1-hour sessions)
+        .customizer-section {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px 18px;
+            background: rgba(255,255,255,0.03);
+            padding: 10px 16px;
+            border-radius: 14px;
+            border: 1px solid #3a2a6a;
+            margin-bottom: 14px;
+            width: 94%;
+            max-width: 800px;
+        }
+        .color-group { display: flex; align-items: center; gap: 5px; }
+        .color-group label { color: #9a8ac0; font-size: 10px; letter-spacing: 0.3px; min-width: 40px; }
+        .color-group input[type="color"] {
+            width: 30px; height: 30px;
+            border: 2px solid #6f3aff;
+            border-radius: 50%;
+            padding: 2px;
+            background: transparent;
+            cursor: pointer;
+        }
+        .color-group input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        .color-group input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
 
-What you’ll learn:
+        #startBtn {
+            background: linear-gradient(135deg, #6f3aff, #ff2d95);
+            border: none;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 12px 44px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            box-shadow: 0 0 40px #6f3aff66;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        #startBtn:hover { transform: scale(1.05); box-shadow: 0 0 60px #6f3affaa; }
+        #startBtn:active { transform: scale(0.95); }
+        .theme-badge { color: #5f5f8f; font-size: 10px; margin-top: 4px; opacity: 0.5; }
 
-Understanding the Scratch interface Creating simple animations Basic game mechanics Interactive storytelling Intermediate Scratch (Level 2) Duration: 8 weeks (1-hour sessions)
+        @media (max-width: 700px) {
+            .mode-grid { grid-template-columns: repeat(3, 1fr); }
+            .customizer-section { flex-direction: row; flex-wrap: wrap; gap: 6px 12px; padding: 8px 12px; }
+            .color-group label { font-size: 9px; min-width: 30px; }
+            .color-group input[type="color"] { width: 26px; height: 26px; }
+            #modeScreen h1 { font-size: 26px; }
+            #startBtn { font-size: 16px; padding: 10px 32px; }
+        }
+    </style>
+</head>
+<body>
+<div class="game-wrapper">
+    <div id="ui">
+        <span>✦ LEVEL <span id="levelDisplay">1</span></span>
+        <span style="color:#7f7fb0;">·</span>
+        <span id="themeDisplay" style="color:#a88bff;">GALAXY</span>
+        <span id="progressDisplay" style="color:#7f7fb0; font-size:16px;"></span>
+        <span id="coinDisplay" style="color:#ffd700; font-size:16px;">🪙 0</span>
+    </div>
+    <div class="hint">← ↑ →  ·  space / w  ·  HOLD for higher jump</div>
 
-What you’ll learn:
+    <!-- MOBILE CONTROLS -->
+    <div id="mobileControls">
+        <div class="dpad">
+            <button id="btnLeft">◀</button>
+            <button id="btnRight">▶</button>
+        </div>
+        <div class="action-buttons">
+            <button id="btnJump">▲<br><span style="font-size:10px;">JUMP</span></button>
+        </div>
+    </div>
 
-Advanced sprite control Game scoring systems Variables and conditionals Multi-level game design Advanced Scratch (Level 3) Duration: 8 weeks (1-hour sessions)
+    <!-- MODE / CUSTOMIZATION SCREEN -->
+    <div id="modeScreen">
+        <h1>✦ NEON DASH</h1>
+        <div class="sub">pick your theme &amp; customize your character</div>
 
-What you’ll learn:
+        <div class="mode-grid" id="themeGrid">
+            <button class="mode-btn active" data-theme="galaxy"><span class="icon">🌌</span>Galaxy</button>
+            <button class="mode-btn" data-theme="desert"><span class="icon">🏜️</span>Desert</button>
+            <button class="mode-btn" data-theme="ice"><span class="icon">❄️</span>Ice Age</button>
+            <button class="mode-btn" data-theme="jungle"><span class="icon">🌴</span>Jungle</button>
+            <button class="mode-btn" data-theme="underwater"><span class="icon">🌊</span>Underwater</button>
+            <button class="mode-btn" data-theme="city"><span class="icon">🏙️</span>City</button>
+            <button class="mode-btn" data-theme="minecraft"><span class="icon">⛏️</span>Minecraft</button>
+            <button class="mode-btn" data-theme="neon"><span class="icon">💜</span>Neon</button>
+        </div>
 
-Cloning and advanced animation Complex game mechanics Basic AI concepts in games Publishing and sharing projects Why Learn With Me? Experienced Instructor: I have [X] years of experience teaching Scratch to students Small Class Sizes: Maximum 6 students per class for personalized attention Project-Based: Every student completes multiple projects they can be proud of Flexible Scheduling: Classes available at different times to suit your schedule Affordable Pricing: Quality education at reasonable rates Contact Me Ready to start your coding journey or have questions? Get in touch!
+        <div class="customizer-section">
+            <div class="color-group"><label>🎨 Skin</label><input type="color" id="skinColor" value="#4a4aff"></div>
+            <div class="color-group"><label>👁️ Eyes</label><input type="color" id="eyeColor" value="#1B1B80"></div>
+            <div class="color-group"><label>👄 Mouth</label><input type="color" id="mouthColor" value="#000050"></div>
+            <div class="color-group"><label>✨ Outline</label><input type="color" id="outlineColor" value="#000035"></div>
+            <div class="color-group"><label>💫 Neon</label><input type="color" id="glowColor" value="#4a4aff"></div>
+            <div class="color-group"><label>🌊 Trail</label><input type="color" id="trailColor" value="#4a4aff"></div>
+        </div>
 
-Phone/WhatsApp +92 331 3283651
+        <button id="startBtn">▶ START GAME</button>
+        <div class="theme-badge">15 levels · Flying Portal · Coins · Traps · Slide Platforms</div>
+    </div>
 
-Email adanhamid1772013@gmail.com
+    <canvas id="gameCanvas" width="1000" height="600"></canvas>
+</div>
 
-Class Hours Monday-Friday: 3pm-7pm
+<script>
+    (function(){
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const levelDisplay = document.getElementById('levelDisplay');
+        const themeDisplay = document.getElementById('themeDisplay');
+        const progressDisplay = document.getElementById('progressDisplay');
+        const coinDisplay = document.getElementById('coinDisplay');
+        const modeScreen = document.getElementById('modeScreen');
+        const startBtn = document.getElementById('startBtn');
 
-Saturday: 10am-2pm
+        // Color inputs
+        const skinColorInput = document.getElementById('skinColor');
+        const eyeColorInput = document.getElementById('eyeColor');
+        const mouthColorInput = document.getElementById('mouthColor');
+        const outlineColorInput = document.getElementById('outlineColor');
+        const glowColorInput = document.getElementById('glowColor');
+        const trailColorInput = document.getElementById('trailColor');
 
-© 2023 Creative Coding with Scratch 3.0. All rights reserved.
+        // Mobile buttons
+        const btnLeft = document.getElementById('btnLeft');
+        const btnRight = document.getElementById('btnRight');
+        const btnJump = document.getElementById('btnJump');
+
+        // ---------- FIXED DIMENSIONS ----------
+        const W = 1000, H = 600;
+        // ---------- GAME STATE ----------
+        let currentLevel = 1;
+        const MAX_LEVEL = 15;
+        let keys = {};
+        let platforms = [];
+        let obstacles = [];
+        let coins = [];
+        let goal = null;
+        let camera = { x: 0 };
+        let levelWidth = 1200;
+        let gameRunning = false;
+        let selectedTheme = 'galaxy';
+        let particles = [];
+        let envEffects = [];
+        let deathParticles = [];
+        let respawning = false;
+        let respawnTimer = 0;
+        let totalCoins = 0;
+        let levelCoins = 0;
+        let slidePlatforms = [];
+
+        // ---------- THEME DEFINITIONS ----------
+        const THEMES = {
+            galaxy: { bg: ['#0e0e28', '#1b1b4a'], plat: 'hsl(280, 90%, 60%)', floor: '#4f2b9e', accent: '#6f3aff', name: 'Galaxy' },
+            desert: { bg: ['#2a1a0a', '#4a2a1a'], plat: 'hsl(30, 90%, 55%)', floor: '#8a6a3a', accent: '#d4a050', name: 'Desert' },
+            ice: { bg: ['#0a1a2a', '#1a3a5a'], plat: 'hsl(200, 80%, 65%)', floor: '#4a8aaa', accent: '#7ac0e0', name: 'Ice Age' },
+            jungle: { bg: ['#0a1a0a', '#1a3a1a'], plat: 'hsl(140, 80%, 40%)', floor: '#2a6a2a', accent: '#3a9a3a', name: 'Jungle' },
+            underwater: { bg: ['#001a2a', '#003a5a'], plat: 'hsl(190, 80%, 45%)', floor: '#1a6a8a', accent: '#3a9ac0', name: 'Underwater' },
+            city: { bg: ['#0a0a1a', '#1a1a3a'], plat: 'hsl(220, 80%, 50%)', floor: '#3a3a6a', accent: '#5a5aff', name: 'City' },
+            minecraft: { bg: ['#1a2a1a', '#3a4a3a'], plat: 'hsl(120, 60%, 45%)', floor: '#5a7a5a', accent: '#8aba8a', name: 'Minecraft' },
+            neon: { bg: ['#1a0a2a', '#3a1a5a'], plat: 'hsl(320, 90%, 55%)', floor: '#6a2a8a', accent: '#ff2d95', name: 'Neon' }
+        };
+
+        // ---------- PHYSICS (HIGHER JUMP) ----------
+        const GRAVITY = 0.48;
+        const JUMP_FORCE = -15.2;
+        const MOVE_SPEED = 6.8;
+        const FRICTION = 0.86;
+        const MAX_FALL = 16;
+
+        // ---------- PLAYER ----------
+        const player = {
+            x: 120, y: 400,
+            w: 24, h: 30,
+            vx: 0, vy: 0,
+            outlineColor: '#000035',
+            faceColor: '#1a1a6e',
+            eyeColor: '#1B1B80',
+            mouthColor: '#000050',
+            glowColor: '#4a4aff',
+            trailColor: '#4a4aff',
+            grounded: false,
+            coyote: 0,
+            jumpBuffer: 0,
+            trail: [],
+            frame: 0,
+            animTimer: 0,
+            rotation: 0,
+            targetRotation: 0,
+            dashTrail: []
+        };
+
+        // ---------- UPDATE SKIN ----------
+        function updateSkinFromPickers() {
+            const skin = skinColorInput.value;
+            const eyes = eyeColorInput.value;
+            const mouth = mouthColorInput.value;
+            const outline = outlineColorInput.value;
+            const glow = glowColorInput.value;
+            const trail = trailColorInput.value;
+
+            const r = parseInt(skin.slice(1,3), 16);
+            const g = parseInt(skin.slice(3,5), 16);
+            const b = parseInt(skin.slice(5,7), 16);
+            const darkR = Math.max(0, r - 30);
+            const darkG = Math.max(0, g - 30);
+            const darkB = Math.max(0, b - 30);
+            
+            player.faceColor = `rgb(${darkR}, ${darkG}, ${darkB})`;
+            player.eyeColor = eyes;
+            player.mouthColor = mouth;
+            player.outlineColor = outline;
+            player.glowColor = glow;
+            player.trailColor = trail;
+        }
+
+        // ---------- SAVE/LODAD PROGRESS ----------
+        function saveProgress() {
+            try {
+                localStorage.setItem('neonDashLevel', currentLevel);
+                localStorage.setItem('neonDashCoins', totalCoins);
+            } catch(e) {}
+        }
+
+        function loadProgress() {
+            try {
+                const savedLevel = localStorage.getItem('neonDashLevel');
+                const savedCoins = localStorage.getItem('neonDashCoins');
+                if (savedLevel) currentLevel = parseInt(savedLevel);
+                if (savedCoins) totalCoins = parseInt(savedCoins);
+                if (currentLevel > MAX_LEVEL) currentLevel = 1;
+            } catch(e) {}
+        }
+
+        // ---------- BUILD LEVEL ----------
+        function buildLevel(lvl) {
+            const theme = THEMES[selectedTheme] || THEMES.galaxy;
+            themeDisplay.textContent = theme.name.toUpperCase();
+
+            const baseLength = 3000 + lvl * 900;
+            levelWidth = baseLength;
+            
+            platforms = [];
+            obstacles = [];
+            coins = [];
+            slidePlatforms = [];
+            deathParticles = [];
+            respawning = false;
+            levelCoins = 0;
+            
+            // Boundaries
+            platforms.push({ x: -20, y: 0, w: 20, h: H, isWall: true });
+            platforms.push({ x: levelWidth, y: 0, w: 20, h: H, isWall: true });
+            
+            // Floor with gaps
+            let floorSegments = [];
+            let gapChance = Math.max(0.05, 0.20 - lvl * 0.01);
+            let currentX = 0;
+            
+            while (currentX < levelWidth - 100) {
+                let segWidth = 120 + Math.random() * 180;
+                if (Math.random() < gapChance && currentX > 300) {
+                    let gapWidth = 80 + Math.random() * 140;
+                    currentX += gapWidth;
+                    continue;
+                }
+                floorSegments.push({ x: currentX, y: H-20, w: segWidth, h: 20 });
+                currentX += segWidth;
+            }
+            
+            floorSegments.forEach(seg => {
+                platforms.push({ x: seg.x, y: seg.y, w: seg.w, h: seg.h, color: theme.floor });
+            });
+
+            // Platforms
+            const numPlatforms = 20 + lvl * 3;
+            const seed = lvl * 13 + 7;
+            
+            for (let i = 0; i < numPlatforms; i++) {
+                const px = 200 + (i * (levelWidth - 400) / numPlatforms) + (seed * (i+1)) % 80;
+                const py = 80 + Math.random() * 400;
+                const pw = 50 + Math.random() * 70;
+                platforms.push({
+                    x: px, y: py, w: pw, h: 14,
+                    color: theme.plat
+                });
+            }
+
+            // Slide Platforms (moving)
+            const numSlides = 3 + Math.floor(lvl / 3);
+            for (let i = 0; i < numSlides; i++) {
+                const sx = 300 + (i * (levelWidth - 600) / numSlides) + (seed * (i+2)) % 100;
+                const sy = 100 + Math.random() * 350;
+                const sw = 80 + Math.random() * 60;
+                slidePlatforms.push({
+                    x: sx, y: sy, w: sw, h: 14,
+                    startX: sx,
+                    endX: sx + (150 + Math.random() * 200) * (Math.random() > 0.5 ? 1 : -1),
+                    speed: 0.5 + Math.random() * 0.8,
+                    dir: 1,
+                    color: `hsl(${200 + Math.random() * 60}, 80%, 55%)`
+                });
+            }
+
+            // Obstacles (spikes, blocks, saws, traps)
+            const numObstacles = 12 + lvl * 3;
+            for (let i = 0; i < numObstacles; i++) {
+                const ox = 150 + (i * (levelWidth - 300) / numObstacles) + (seed * (i+3)) % 100;
+                const oy = H - 20 - 20 - Math.random() * 50;
+                const type = Math.floor(Math.random() * 4);
+                obstacles.push({
+                    x: ox, y: oy, w: 22, h: 22,
+                    type: type,
+                    color: ['#ff2d95', '#ff6b00', '#ffd700', '#ff2d95'][type],
+                    active: true,
+                    phase: Math.random() * Math.PI * 2
+                });
+            }
+
+            // Coins (Geometry Dash style)
+            const numCoins = 15 + lvl * 3;
+            for (let i = 0; i < numCoins; i++) {
+                const cx = 200 + (i * (levelWidth - 400) / numCoins) + (seed * (i+5)) % 80;
+                const cy = 50 + Math.random() * 450;
+                coins.push({
+                    x: cx, y: cy, w: 14, h: 14,
+                    collected: false,
+                    phase: Math.random() * Math.PI * 2
+                });
+                levelCoins++;
+            }
+
+            // GOAL - Flying Portal (comes down from the sky)
+            const goalX = levelWidth - 100;
+            goal = { 
+                x: goalX, 
+                y: -80,  // Starts above screen
+                w: 50, h: 50,
+                targetY: 80 + Math.random() * 120,
+                descending: true,
+                descendSpeed: 1.5
+            };
+
+            // Reset player
+            player.x = 100;
+            player.y = H - 60;
+            player.vx = 0;
+            player.vy = 0;
+            player.grounded = false;
+            player.trail = [];
+            player.dashTrail = [];
+            player.rotation = 0;
+            camera.x = 0;
+            respawning = false;
+
+            // Spawn environment effects
+            envEffects = [];
+            spawnEnvEffects(selectedTheme, 60);
+            
+            progressDisplay.textContent = `🏁 ${Math.round(levelWidth/1000)}km`;
+            coinDisplay.textContent = `🪙 ${totalCoins}`;
+            saveProgress();
+        }
+
+        // ---------- ENVIRONMENT EFFECTS ----------
+        function spawnEnvEffects(theme, count) {
+            for (let i = 0; i < count; i++) {
+                let type = 'star';
+                let x = Math.random() * levelWidth;
+                let y = Math.random() * H;
+                let size = 2 + Math.random() * 4;
+                let life = 200 + Math.random() * 300;
+                let color = '#ffffff';
+
+                if (theme === 'ice') { type = 'snow'; color = 'rgba(255,255,255,0.8)'; } 
+                else if (theme === 'desert') { type = 'sand'; color = 'rgba(200,180,140,0.6)'; } 
+                else if (theme === 'jungle') { type = 'leaf'; color = 'rgba(100,200,80,0.4)'; } 
+                else if (theme === 'city') { type = 'light'; color = `hsl(${Math.random()*60+200}, 80%, 60%)`; } 
+                else if (theme === 'minecraft') { type = 'block'; color = `hsl(${Math.random()*60+80}, 50%, 50%)`; } 
+                else if (theme === 'neon') { type = 'neon'; color = `hsl(${Math.random()*60+280}, 90%, 60%)`; }
+
+                envEffects.push({
+                    x, y, vx: (Math.random() - 0.5) * 0.5,
+                    vy: (0.5 + Math.random() * 0.8) * (theme === 'ice' ? 0.8 : 0.3),
+                    size, life, maxLife: life,
+                    type, color,
+                    phase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        // ---------- EVENT LISTENERS ----------
+        window.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) {
+                e.preventDefault();
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        function setupMobileButton(id, keyCode) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                keys[keyCode] = true;
+                if (keyCode === 'Space') keys['Space'] = true;
+            });
+            el.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                keys[keyCode] = false;
+                if (keyCode === 'Space') keys['Space'] = false;
+            });
+            el.addEventListener('touchcancel', (e) => {
+                keys[keyCode] = false;
+                if (keyCode === 'Space') keys['Space'] = false;
+            });
+            el.addEventListener('mousedown', () => {
+                keys[keyCode] = true;
+                if (keyCode === 'Space') keys['Space'] = true;
+            });
+            el.addEventListener('mouseup', () => {
+                keys[keyCode] = false;
+                if (keyCode === 'Space') keys['Space'] = false;
+            });
+            el.addEventListener('mouseleave', () => {
+                keys[keyCode] = false;
+                if (keyCode === 'Space') keys['Space'] = false;
+            });
+        }
+
+        setupMobileButton('btnLeft', 'ArrowLeft');
+        setupMobileButton('btnRight', 'ArrowRight');
+        setupMobileButton('btnJump', 'Space');
+
+        // ---------- COLLISION ----------
+        function rectCollide(a, b) {
+            return a.x < b.x + b.w && a.x + a.w > b.x &&
+                   a.y < b.y + b.h && a.y + a.h > b.y;
+        }
+
+        // ---------- UPDATE ----------
+        function update() {
+            if (!gameRunning) return;
+
+            if (respawning) {
+                respawnTimer--;
+                if (respawnTimer <= 0) {
+                    respawning = false;
+                    player.x = 100;
+                    player.y = H - 60;
+                    player.vx = 0;
+                    player.vy = 0;
+                    camera.x = 0;
+                    // Reset coins in level
+                    coins.forEach(c => c.collected = false);
+                    // Reset goal position
+                    if (goal) {
+                        goal.y = -80;
+                        goal.descending = true;
+                    }
+                }
+                return;
+            }
+
+            // --- GOAL DESCEND ---
+            if (goal && goal.descending) {
+                goal.y += goal.descendSpeed;
+                if (goal.y >= goal.targetY) {
+                    goal.y = goal.targetY;
+                    goal.descending = false;
+                }
+            }
+
+            // --- SLIDE PLATFORMS ---
+            slidePlatforms.forEach(slide => {
+                slide.x += slide.speed * slide.dir;
+                if (slide.x > Math.max(slide.startX, slide.endX) || slide.x < Math.min(slide.startX, slide.endX)) {
+                    slide.dir *= -1;
+                }
+            });
+
+            // --- PLAYER MOVEMENT ---
+            let move = 0;
+            if (keys['ArrowLeft'] || keys['KeyA']) move = -1;
+            if (keys['ArrowRight'] || keys['KeyD']) move = 1;
+
+            if (move !== 0) {
+                player.vx += (move * MOVE_SPEED - player.vx) * 0.15;
+            } else {
+                player.vx *= FRICTION;
+            }
+            if (Math.abs(player.vx) > MOVE_SPEED) player.vx = Math.sign(player.vx) * MOVE_SPEED;
+
+            // Jump
+            if (keys['Space'] || keys['ArrowUp'] || keys['KeyW']) {
+                player.jumpBuffer = 18;
+            }
+            if (player.jumpBuffer > 0) player.jumpBuffer--;
+
+            if (player.grounded) player.coyote = 16;
+            else if (player.coyote > 0) player.coyote--;
+
+            if (player.vy < 0 && !(keys['Space'] || keys['ArrowUp'] || keys['KeyW'])) {
+                player.vy *= 0.82;
+            }
+
+            player.vy += GRAVITY;
+            if (player.vy > MAX_FALL) player.vy = MAX_FALL;
+
+            // Horizontal collision
+            player.x += player.vx;
+            // Check slide platforms first
+            for (let slide of slidePlatforms) {
+                if (rectCollide(player, slide)) {
+                    if (player.vx > 0) {
+                        player.x = slide.x - player.w;
+                    } else if (player.vx < 0) {
+                        player.x = slide.x + slide.w;
+                    }
+                    player.vx = 0;
+                }
+            }
+            for (let plat of platforms) {
+                if (rectCollide(player, plat)) {
+                    if (player.vx > 0) {
+                        player.x = plat.x - player.w;
+                    } else if (player.vx < 0) {
+                        player.x = plat.x + plat.w;
+                    }
+                    player.vx = 0;
+                }
+            }
+
+            // Vertical collision
+            player.y += player.vy;
+            player.grounded = false;
+            
+            // Check slide platforms
+            for (let slide of slidePlatforms) {
+                if (rectCollide(player, slide)) {
+                    if (player.vy > 0) {
+                        player.y = slide.y - player.h;
+                        player.vy = 0;
+                        player.grounded = true;
+                        player.coyote = 16;
+                        // Move with platform
+                        player.x += slide.speed * slide.dir * 0.5;
+                    } else if (player.vy < 0) {
+                        player.y = slide.y + slide.h;
+                        player.vy = 0;
+                    }
+                }
+            }
+            
+            for (let plat of platforms) {
+                if (rectCollide(player, plat)) {
+                    if (player.vy > 0) {
+                        player.y = plat.y - player.h;
+                        player.vy = 0;
+                        player.grounded = true;
+                        player.coyote = 16;
+                    } else if (player.vy < 0) {
+                        player.y = plat.y + plat.h;
+                        player.vy = 0;
+                    }
+                }
+            }
+
+            // Jump execution
+            if (player.jumpBuffer > 0 && player.coyote > 0) {
+                player.vy = JUMP_FORCE;
+                player.grounded = false;
+                player.coyote = 0;
+                player.jumpBuffer = 0;
+                for (let i = 0; i < 12; i++) {
+                    particles.push({
+                        x: player.x + player.w/2,
+                        y: player.y + player.h,
+                        vx: (Math.random() - 0.5) * 5,
+                        vy: -Math.random() * 4 - 1,
+                        life: 20 + Math.random() * 10,
+                        maxLife: 30,
+                        size: 2 + Math.random() * 5,
+                        color: player.glowColor
+                    });
+                }
+            }
+
+            // --- COIN COLLECTION ---
+            for (let coin of coins) {
+                if (!coin.collected && rectCollide(player, coin)) {
+                    coin.collected = true;
+                    totalCoins++;
+                    coinDisplay.textContent = `🪙 ${totalCoins}`;
+                    // Coin particle effect
+                    for (let i = 0; i < 10; i++) {
+                        particles.push({
+                            x: coin.x + coin.w/2,
+                            y: coin.y + coin.h/2,
+                            vx: (Math.random() - 0.5) * 6,
+                            vy: (Math.random() - 0.5) * 6,
+                            life: 15 + Math.random() * 10,
+                            maxLife: 25,
+                            size: 2 + Math.random() * 4,
+                            color: '#ffd700'
+                        });
+                    }
+                    saveProgress();
+                }
+            }
+
+            // --- OBSTACLE COLLISION ---
+            for (let obs of obstacles) {
+                if (rectCollide(player, obs)) {
+                    for (let i = 0; i < 40; i++) {
+                        deathParticles.push({
+                            x: player.x + player.w/2,
+                            y: player.y + player.h/2,
+                            vx: (Math.random() - 0.5) * 14,
+                            vy: (Math.random() - 0.5) * 14,
+                            life: 40 + Math.random() * 20,
+                            maxLife: 60,
+                            size: 3 + Math.random() * 6,
+                            color: player.glowColor
+                        });
+                    }
+                    respawning = true;
+                    respawnTimer = 30;
+                    return;
+                }
+            }
+
+            // --- GOAL CHECK ---
+            if (goal && rectCollide(player, goal)) {
+                if (currentLevel < MAX_LEVEL) {
+                    currentLevel++;
+                    levelDisplay.textContent = currentLevel;
+                    goal = null;
+                    buildLevel(currentLevel);
+                    saveProgress();
+                } else {
+                    alert('🌟✨ YOU BEAT ALL 15 LEVELS! ✨🌟\n🏆 YOU ARE A NEON LEGEND! 🏆\n🪙 Coins Collected: ' + totalCoins + '\n🔄 Restarting from level 1');
+                    currentLevel = 1;
+                    totalCoins = 0;
+                    levelDisplay.textContent = currentLevel;
+                    goal = null;
+                    buildLevel(currentLevel);
+                    saveProgress();
+                }
+                return;
+            }
+
+            // --- FALL DEATH ---
+            if (player.y > H + 50) {
+                for (let i = 0; i < 40; i++) {
+                    deathParticles.push({
+                        x: player.x + player.w/2,
+                        y: H,
+                        vx: (Math.random() - 0.5) * 12,
+                        vy: -Math.random() * 10 - 2,
+                        life: 40 + Math.random() * 20,
+                        maxLife: 60,
+                        size: 3 + Math.random() * 6,
+                        color: player.glowColor
+                    });
+                }
+                respawning = true;
+                respawnTimer = 30;
+                return;
+            }
+
+            // --- CAMERA FOLLOW ---
+            let targetCam = player.x - W * 0.35;
+            targetCam = Math.max(0, Math.min(targetCam, levelWidth - W));
+            camera.x += (targetCam - camera.x) * 0.08;
+            if (Math.abs(camera.x - targetCam) < 0.5) camera.x = targetCam;
+            camera.x = Math.max(0, Math.min(camera.x, levelWidth - W));
+
+            // --- TRAIL ---
+            if (Math.abs(player.vx) > 0.5 || Math.abs(player.vy) > 0.5) {
+                player.trail.push({ x: player.x + player.w/2, y: player.y + player.h/2, life: 14 });
+                player.dashTrail.push({ x: player.x + player.w/2, y: player.y + player.h/2, life: 8 });
+            }
+            if (player.trail.length > 25) player.trail.shift();
+            player.trail = player.trail.filter(t => t.life > 0);
+            player.trail.forEach(t => t.life--);
+            
+            if (player.dashTrail.length > 15) player.dashTrail.shift();
+            player.dashTrail = player.dashTrail.filter(t => t.life > 0);
+            player.dashTrail.forEach(t => t.life--);
+
+            // --- ANIMATION ---
+            player.animTimer++;
+            if (Math.abs(player.vx) > 0.5) {
+                player.frame = Math.floor(player.animTimer / 5) % 4;
+            } else {
+                player.frame = 0;
+            }
+
+            player.targetRotation = player.vx * 0.03;
+            player.rotation += (player.targetRotation - player.rotation) * 0.1;
+
+            // --- PARTICLES ---
+            particles = particles.filter(p => p.life > 0);
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05;
+                p.life--;
+                p.size *= 0.97;
+            });
+
+            deathParticles = deathParticles.filter(p => p.life > 0);
+            deathParticles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.08;
+                p.life--;
+                p.size *= 0.96;
+            });
+
+            // --- ENVIRONMENT ---
+            envEffects.forEach(e => {
+                e.x += e.vx;
+                e.y += e.vy;
+                e.life--;
+                e.phase += 0.02;
+                if (e.type === 'snow' || e.type === 'sand') {
+                    e.x += Math.sin(e.phase) * 0.3;
+                }
+                if (e.x > levelWidth + 20) e.x = -20;
+                if (e.x < -20) e.x = levelWidth + 20;
+                if (e.y > H + 20) { e.y = -20; e.x = Math.random() * levelWidth; }
+                if (e.y < -20) { e.y = H + 20; e.x = Math.random() * levelWidth; }
+                if (e.life < 0) {
+                    e.x = Math.random() * levelWidth;
+                    e.y = Math.random() * H;
+                    e.life = e.maxLife;
+                }
+            });
+            
+            // --- PROGRESS ---
+            let progress = Math.min(100, (player.x / levelWidth) * 100);
+            progressDisplay.textContent = `🏁 ${Math.round(progress)}%`;
+        }
+
+        // ---------- DRAW ----------
+        function draw() {
+            const theme = THEMES[selectedTheme] || THEMES.galaxy;
+            
+            // Background
+            const grad = ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, theme.bg[0]);
+            grad.addColorStop(1, theme.bg[1]);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+            
+            ctx.save();
+            ctx.translate(-camera.x, 0);
+
+            // Environment effects
+            envEffects.forEach(e => {
+                ctx.globalAlpha = Math.min(1, e.life / e.maxLife * 2);
+                if (e.type === 'snow') {
+                    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                    ctx.shadowBlur = 6;
+                    ctx.shadowColor = 'rgba(200,230,255,0.5)';
+                    ctx.beginPath();
+                    ctx.arc(e.x, e.y, e.size * 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (e.type === 'sand') {
+                    ctx.fillStyle = 'rgba(200,180,140,0.5)';
+                    ctx.shadowBlur = 0;
+                    ctx.fillRect(e.x, e.y, e.size, e.size * 0.6);
+                } else if (e.type === 'leaf') {
+                    ctx.fillStyle = 'rgba(100,200,80,0.3)';
+                    ctx.shadowBlur = 0;
+                    ctx.beginPath();
+                    ctx.ellipse(e.x, e.y, e.size * 0.6, e.size * 0.3, e.phase, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (e.type === 'light') {
+                    ctx.fillStyle = e.color;
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = e.color;
+                    ctx.fillRect(e.x, e.y, 3 + Math.sin(e.phase) * 1, 6 + Math.sin(e.phase * 0.7) * 3);
+                } else if (e.type === 'block') {
+                    ctx.fillStyle = e.color;
+                    ctx.shadowBlur = 0;
+                    ctx.fillRect(e.x, e.y, e.size, e.size);
+                    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                    ctx.lineWidth = 0.5;
+                    ctx.strokeRect(e.x, e.y, e.size, e.size);
+                } else if (e.type === 'neon') {
+                    ctx.fillStyle = e.color;
+                    ctx.shadowBlur = 25;
+                    ctx.shadowColor = e.color;
+                    ctx.beginPath();
+                    ctx.arc(e.x, e.y, e.size * 0.3 + Math.sin(e.phase) * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                    ctx.shadowBlur = 0;
+                    ctx.fillRect(e.x, e.y, 1.5, 1.5);
+                }
+                ctx.shadowBlur = 0;
+            });
+            ctx.globalAlpha = 1;
+
+            // Slide Platforms
+            for (let slide of slidePlatforms) {
+                ctx.fillStyle = slide.color || '#4a8aff';
+                ctx.shadowColor = '#4a8aff';
+                ctx.shadowBlur = 15;
+                ctx.fillRect(slide.x, slide.y, slide.w, slide.h);
+                // Arrow indicators
+                ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                ctx.shadowBlur = 0;
+                const arrowX = slide.dir > 0 ? slide.x + slide.w - 12 : slide.x + 2;
+                ctx.beginPath();
+                ctx.moveTo(arrowX, slide.y + 2);
+                ctx.lineTo(arrowX + (slide.dir > 0 ? 8 : -8), slide.y + slide.h/2);
+                ctx.lineTo(arrowX, slide.y + slide.h - 2);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+
+            // Platforms
+            for (let plat of platforms) {
+                if (plat.isWall) {
+                    ctx.fillStyle = '#1a1a3a';
+                    ctx.shadowBlur = 0;
+                } else {
+                    ctx.fillStyle = plat.color || theme.plat;
+                    ctx.shadowColor = theme.accent;
+                    ctx.shadowBlur = 12;
+                }
+                ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+                if (!plat.isWall) {
+                    ctx.shadowBlur = 20;
+                    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+                    ctx.fillRect(plat.x+2, plat.y-1, plat.w-4, 3);
+                }
+            }
+            ctx.shadowBlur = 0;
+
+            // Coins
+            const time = Date.now() / 400;
+            for (let coin of coins) {
+                if (coin.collected) continue;
+                const cx = coin.x + coin.w/2;
+                const cy = coin.y + coin.h/2 + Math.sin(time + coin.phase) * 4;
+                const size = coin.w/2;
+                
+                ctx.shadowColor = '#ffd700';
+                ctx.shadowBlur = 20;
+                ctx.fillStyle = '#ffd700';
+                ctx.beginPath();
+                // Star shape
+                for (let i = 0; i < 10; i++) {
+                    const angle = (i / 10) * Math.PI * 2 - Math.PI/2 + time * 0.5 + coin.phase;
+                    const r = i % 2 === 0 ? size : size * 0.5;
+                    const x = cx + Math.cos(angle) * r;
+                    const y = cy + Math.sin(angle) * r;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(255,255,200,0.3)';
+                ctx.beginPath();
+                ctx.arc(cx, cy, size * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+
+            // Obstacles
+            for (let obs of obstacles) {
+                ctx.fillStyle = obs.color || '#ff2d95';
+                ctx.shadowColor = obs.color || '#ff2d95';
+                ctx.shadowBlur = 15;
+                if (obs.type === 0) {
+                    // Spike triangle
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x + obs.w/2, obs.y);
+                    ctx.lineTo(obs.x + obs.w, obs.y + obs.h);
+                    ctx.lineTo(obs.x, obs.y + obs.h);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (obs.type === 1) {
+                    // Saw blade
+                    ctx.beginPath();
+                    for (let i = 0; i < 8; i++) {
+                        let angle = (i / 8) * Math.PI * 2 + Date.now() / 500 + obs.phase;
+                        let r = i % 2 === 0 ? obs.w/2 : obs.w/3;
+                        let x = obs.x + obs.w/2 + Math.cos(angle) * r;
+                        let y = obs.y + obs.h/2 + Math.sin(angle) * r;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (obs.type === 2) {
+                    // Trap block with spikes
+                    ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+                    ctx.fillStyle = '#ff6b00';
+                    for (let i = 0; i < 3; i++) {
+                        const sx = obs.x + 4 + i * 7;
+                        ctx.beginPath();
+                        ctx.moveTo(sx, obs.y);
+                        ctx.lineTo(sx + 3, obs.y - 6);
+                        ctx.lineTo(sx + 6, obs.y);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                } else {
+                    // Block
+                    ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+                    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+                }
+                ctx.shadowBlur = 0;
+            }
+
+            // GOAL - Flying Portal
+            if (goal) {
+                const gx = goal.x, gy = goal.y, gw = goal.w, gh = goal.h;
+                const t = Date.now() / 300;
+                
+                // Portal rings
+                for (let ring = 0; ring < 4; ring++) {
+                    const radius = gw/2 + ring * 7 + Math.sin(t + ring * 1.5) * 4;
+                    ctx.shadowColor = '#6f3aff';
+                    ctx.shadowBlur = 40 - ring * 6;
+                    ctx.globalAlpha = 0.7 - ring * 0.12;
+                    ctx.fillStyle = `hsl(${240 + ring * 20}, 90%, 60%)`;
+                    ctx.beginPath();
+                    ctx.arc(gx + gw/2, gy + gh/2, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Main portal
+                ctx.globalAlpha = 1;
+                ctx.shadowColor = '#6f3aff';
+                ctx.shadowBlur = 50;
+                const grad2 = ctx.createRadialGradient(gx + gw/2, gy + gh/2, 0, gx + gw/2, gy + gh/2, gw/2);
+                grad2.addColorStop(0, '#a88bff');
+                grad2.addColorStop(0.5, '#6f3aff');
+                grad2.addColorStop(1, '#3a1a7a');
+                ctx.fillStyle = grad2;
+                ctx.beginPath();
+                ctx.arc(gx + gw/2, gy + gh/2, gw/2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Inner spiral
+                ctx.shadowBlur = 20;
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.beginPath();
+                ctx.arc(gx + gw/2, gy + gh/2, gw/3.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Particles flying out
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = '#ffffff';
+                for (let s = 0; s < 8; s++) {
+                    let angle = t + s * 0.8;
+                    let dist = 5 + Math.sin(t * 0.5 + s) * 8;
+                    let dx = Math.cos(angle) * dist;
+                    let dy = Math.sin(angle) * dist;
+                    ctx.beginPath();
+                    ctx.arc(gx + gw/2 + dx, gy + gh/2 + dy, 2 + Math.sin(t + s) * 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // "FLYING PORTAL" label
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 0.9;
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 10px "Courier New", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('🌀 FLYING', gx + gw/2, gy + gh/2 + 34);
+                ctx.fillText('PORTAL', gx + gw/2, gy + gh/2 + 46);
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
+            }
+
+            // Death particles
+            deathParticles.forEach(p => {
+                ctx.globalAlpha = p.life / p.maxLife;
+                ctx.fillStyle = p.color || '#ff2d95';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = p.color || '#ff2d95';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+
+            // Jump particles
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life / p.maxLife;
+                ctx.fillStyle = p.color || '#7df9ff';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = p.color || '#7df9ff';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+
+            // Player trail
+            for (let t of player.trail) {
+                let alpha = t.life / 14;
+                ctx.globalAlpha = alpha * 0.3;
+                ctx.fillStyle = player.trailColor || player.glowColor;
+                ctx.shadowBlur = 25;
+                ctx.shadowColor = player.trailColor || player.glowColor;
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, 4 + (1-alpha)*4, 0, Math.PI*2);
+                ctx.fill();
+            }
+            
+            // Dash trail
+            for (let t of player.dashTrail) {
+                let alpha = t.life / 8;
+                ctx.globalAlpha = alpha * 0.5;
+                ctx.fillStyle = player.glowColor;
+                ctx.shadowBlur = 35;
+                ctx.shadowColor = player.glowColor;
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, 8 + (1-alpha)*8, 0, Math.PI*2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1.0;
+            ctx.shadowBlur = 0;
+
+            // ---- PLAYER ----
+            const px = player.x, py = player.y, pw = player.w, ph = player.h;
+            
+            ctx.save();
+            ctx.translate(px + pw/2, py + ph/2);
+            ctx.rotate(player.rotation);
+            ctx.translate(-pw/2, -ph/2);
+            
+            ctx.shadowColor = player.glowColor;
+            ctx.shadowBlur = 50;
+            ctx.fillStyle = 'rgba(74, 74, 255, 0.08)';
+            ctx.fillRect(-6, -6, pw + 12, ph + 12);
+            
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = player.outlineColor;
+            roundRect(ctx, -2, -2, pw + 4, ph + 4, 4);
+            ctx.fill();
+            
+            ctx.fillStyle = player.faceColor;
+            roundRect(ctx, 0, 0, pw, ph, 3);
+            ctx.fill();
+            
+            ctx.fillStyle = 'rgba(74, 74, 255, 0.08)';
+            roundRect(ctx, 3, 3, pw - 6, ph - 6, 2);
+            ctx.fill();
+            
+            ctx.shadowColor = player.glowColor;
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = player.eyeColor;
+            roundRect(ctx, 3, 5, 7, 8, 3);
+            ctx.fill();
+            roundRect(ctx, 14, 5, 7, 8, 3);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(5, 7, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(16, 7, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = player.mouthColor;
+            ctx.fillRect(5, 20, 14, 3);
+            ctx.fillRect(4, 22, 16, 2);
+            
+            ctx.shadowColor = player.glowColor;
+            ctx.shadowBlur = 15;
+            ctx.fillStyle = player.glowColor;
+            ctx.beginPath();
+            ctx.arc(3, 18, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(21, 18, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = player.glowColor;
+            ctx.fillStyle = player.glowColor;
+            ctx.fillRect(10, -5, 4, 5);
+            ctx.beginPath();
+            ctx.arc(12, -6, 4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(4, 27);
+            ctx.lineTo(20, 27);
+            ctx.stroke();
+            
+            ctx.shadowBlur = 0;
+            ctx.restore();
+
+            ctx.restore();
+
+            // HUD
+            ctx.fillStyle = '#b7aaff';
+            ctx.font = 'bold 20px "Courier New", monospace';
+            ctx.shadowBlur = 16;
+            ctx.shadowColor = '#6f3aff';
+            ctx.fillText('✦', 22, 52);
+            ctx.shadowBlur = 0;
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.1)';
+            ctx.font = '11px monospace';
+            ctx.fillText(`${currentLevel} / ${MAX_LEVEL}`, W - 100, 60);
+            
+            // Progress bar
+            const progress = Math.min(100, (player.x / levelWidth) * 100);
+            ctx.fillStyle = 'rgba(255,255,255,0.05)';
+            ctx.fillRect(W - 200, 15, 180, 6);
+            ctx.fillStyle = '#6f3aff';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#6f3aff';
+            ctx.fillRect(W - 200, 15, (progress / 100) * 180, 6);
+            ctx.shadowBlur = 0;
+        }
+
+        // Helper: rounded rect
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        // ---------- LOOP ----------
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        // ---------- START GAME ----------
+        function startGame() {
+            updateSkinFromPickers();
+            loadProgress();
+            gameRunning = true;
+            modeScreen.style.display = 'none';
+            levelDisplay.textContent = currentLevel;
+            buildLevel(currentLevel);
+            coinDisplay.textContent = `🪙 ${totalCoins}`;
+        }
+
+        // ---------- THEME SELECTION ----------
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedTheme = this.dataset.theme;
+            });
+        });
+
+        // ---------- EVENT LISTENERS ----------
+        startBtn.addEventListener('click', startGame);
+        
+        [skinColorInput, eyeColorInput, mouthColorInput, outlineColorInput, glowColorInput, trailColorInput].forEach(inp => {
+            inp.addEventListener('input', () => {
+                if (!gameRunning) {
+                    updateSkinFromPickers();
+                }
+            });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !gameRunning) {
+                startGame();
+            }
+        });
+
+        // ---------- INIT ----------
+        buildLevel(1);
+        loop();
+    })();
+</script>
+</body>
+</html>
