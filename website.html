@@ -265,7 +265,7 @@
             <button class="mode-btn" data-theme="jungle"><span class="icon">🌴</span>Jungle</button>
             <button class="mode-btn" data-theme="underwater"><span class="icon">🌊</span>Underwater</button>
             <button class="mode-btn" data-theme="city"><span class="icon">🏙️</span>City</button>
-            <button class="mode-btn" data-theme="minecraft"><span class="icon">⛏️</span>Minecraft</button>
+            <button class="mode-btn" data-theme="slime"><span class="icon">⛏️</span>slime</button>
             <button class="mode-btn" data-theme="neon"><span class="icon">💜</span>Neon</button>
         </div>
 
@@ -340,7 +340,7 @@
             jungle: { bg: ['#0a1a0a', '#1a3a1a'], plat: 'hsl(140, 80%, 40%)', floor: '#2a6a2a', accent: '#3a9a3a', name: 'Jungle' },
             underwater: { bg: ['#001a2a', '#003a5a'], plat: 'hsl(190, 80%, 45%)', floor: '#1a6a8a', accent: '#3a9ac0', name: 'Underwater' },
             city: { bg: ['#0a0a1a', '#1a1a3a'], plat: 'hsl(220, 80%, 50%)', floor: '#3a3a6a', accent: '#5a5aff', name: 'City' },
-            minecraft: { bg: ['#1a2a1a', '#3a4a3a'], plat: 'hsl(120, 60%, 45%)', floor: '#5a7a5a', accent: '#8aba8a', name: 'Minecraft' },
+            slime: { bg: ['#1a2a1a', '#3a4a3a'], plat: 'hsl(120, 60%, 45%)', floor: '#5a7a5a', accent: '#8aba8a', name: 'slime' },
             neon: { bg: ['#1a0a2a', '#3a1a5a'], plat: 'hsl(320, 90%, 55%)', floor: '#6a2a8a', accent: '#ff2d95', name: 'Neon' }
         };
 
@@ -559,7 +559,7 @@
                 else if (theme === 'desert') { type = 'sand'; color = 'rgba(200,180,140,0.6)'; } 
                 else if (theme === 'jungle') { type = 'leaf'; color = 'rgba(100,200,80,0.4)'; } 
                 else if (theme === 'city') { type = 'light'; color = `hsl(${Math.random()*60+200}, 80%, 60%)`; } 
-                else if (theme === 'minecraft') { type = 'block'; color = `hsl(${Math.random()*60+80}, 50%, 50%)`; } 
+                else if (theme === 'slime') { type = 'block'; color = `hsl(${Math.random()*60+80}, 50%, 50%)`; } 
                 else if (theme === 'neon') { type = 'neon'; color = `hsl(${Math.random()*60+280}, 90%, 60%)`; }
 
                 envEffects.push({
